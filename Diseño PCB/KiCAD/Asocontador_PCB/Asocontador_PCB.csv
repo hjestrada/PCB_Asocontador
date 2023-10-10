@@ -1,0 +1,11 @@
+Id;Identificador;Huella;Cantidad;Identificación;Suministrador y ref
+1;C1;CP_Radial_D8.0mm_P3.50mm;1;220uF_25V;
+2;4-20mA-5v1,pH1,Turbidez1;JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical;3;Conn_01x03_Socket;
+3;D1;D_DO-41_SOD81_P10.16mm_Horizontal;1;1N4007;
+4;R2,R3,R1;R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal;3;220;
+5;D3,D2;LED_D3.0mm;2;LED;
+6;U1;TO-220F-3_Horizontal_TabDown;1;LM7805_TO220;
+7;Arduino1;Arduino_Nano;1;Arduino_Nano_v3.x;
+8;RV1;Potentiometer_RM065;1;potentiometer_RM065;
+9;DS1;WC1602A;1;WC1602A;
+10;J1;TerminalBlock_Phoenix_PT-1,5-2-5.0-H_1x02_P5.00mm_Horizontal;1;Screw_Terminal_2_P5.00mm;
