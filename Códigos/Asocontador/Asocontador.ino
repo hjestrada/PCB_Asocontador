@@ -1,23 +1,38 @@
 #include <LiquidCrystal.h>
+#include <PubSubClient.h>
+#include <WiFi.h>
 
 LiquidCrystal lcd(3, 2, 4, 5, 6, 7);
 
 #define SensorPin A0
 #define TurbidityPin A2
-#define ChlorinePin A1  // Puerto analógico para el sensor de cloro residual
+#define ChlorinePin A1
 unsigned long int avgValue;
 float b;
 int buf[10], temp;
 
 // Calibración para la conversión de voltaje a UNT (turbidez)
-float calibracionTurbidezK = 1.0; // Ajusta según la calibración de tu sensor de turbidez
-float calibracionTurbidezB = 0.0; // Ajusta según la calibración de tu sensor de turbidez
+float calibracionTurbidezK = 1.0;
+float calibracionTurbidezB = 0.0;
 
 // Calibración para la conversión de voltaje a mg/L (cloro residual)
-float calibracionCloroK = 1.0; // Ajusta según la calibración de tu sensor de cloro residual
-float calibracionCloroB = 0.0; // Ajusta según la calibración de tu sensor de cloro residual
+float calibracionCloroK = 1.0;
+float calibracionCloroB = 0.0;
+
+const char* ssid = "Teranet Estrada";
+const char* password = "pitalito2023@";
+const char* mqttServer = "broker.hivemq.com";
+const int mqttPort = 1883;
+const char* mqttUser = "";
+const char* mqttPassword = "";
+const char* mqttTopic = "Asocontador/lectura";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 void setup() {
+//set the resolution to 10 bits (0-1024)
+  analogReadResolution(10);
   lcd.begin(16, 2);
   lcd.setCursor(2, 0);
   lcd.print("Tecnoparque");
@@ -30,18 +45,58 @@ void setup() {
   lcd.setCursor(2, 1);
   lcd.print("ASOCONTADOR");
   lcd.clear();
-  Serial.begin(9600); // Iniciar la comunicación serial a 9600 baudios
- 
+  Serial.begin(9600);
+  setup_wifi();
+  client.setServer(mqttServer, mqttPort);
+  
 }
 
 void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+
   lcd.setCursor(0, 0);
   float phValue = measurePH();
   float turbidityValue = measureTurbidity();
   float chlorineValue = measureChlorine();
   displayValues(phValue, turbidityValue, chlorineValue);
 
+  char message[50];
+  snprintf(message, sizeof(message), "pH:%.2f, Turb:%.2f, Cl:%.2f", phValue, turbidityValue, chlorineValue);
+
+  client.publish(mqttTopic, message);
+  // Impresión de los datos en el puerto serie
+  Serial.println("Datos enviados al broker MQTT:");
+  Serial.println(message);
+
   delay(1000);  // Actualizar los valores cada segundo
+}
+
+void setup_wifi() {
+  delay(10);
+  // Conexión WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Conexión WiFi...");
+  }
+  Serial.println("Conexión WiFi exitosa");
+}
+
+void reconnect() {
+  // Bucle hasta que estemos reconectados
+  while (!client.connected()) {
+    Serial.print("Conexión MQTT...");
+    if (client.connect("ESP32Client", mqttUser, mqttPassword)) {
+      Serial.println("Conectado al broker MQTT");
+    } else {
+      Serial.print("Error de conexión, rc=");
+      Serial.print(client.state());
+      Serial.println(" Intentando de nuevo en 5 segundos");
+      delay(5000);
+    }
+  }
 }
 
 float measurePH() {
@@ -65,7 +120,7 @@ float measurePH() {
     avgValue += buf[i];
   }
 
-  float phValue = (float)avgValue * 5.0 / 1024 / 6;
+ float phValue = (float)avgValue * 3.3 / 1024 / 6;
   phValue = 3.5 * phValue;
 
   return phValue;
@@ -100,7 +155,7 @@ void displayValues(float pH, float turbidity, float chlorine) {
   lcd.setCursor(0, 1);  // Segunda fila
   lcd.print("Turb: ");
   lcd.print(turbidity, 2);
-   lcd.setCursor(12, 1);
+  lcd.setCursor(12, 1);
   lcd.print("UNT");
   delay(5000);
   lcd.clear();
@@ -111,5 +166,4 @@ void displayValues(float pH, float turbidity, float chlorine) {
   lcd.print("mg/L");
   delay(3000);
   lcd.clear();
-
 }
