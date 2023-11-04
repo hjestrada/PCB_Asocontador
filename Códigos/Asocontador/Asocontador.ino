@@ -131,9 +131,7 @@ float measureTurbidity() {
 float measureChlorine() {
   int sensorValue = analogRead(ChlorinePin);
   float voltage = sensorValue * (5.0 / 1024.0);
-
   float chlorine = calibracionCloroK * voltage + calibracionCloroB;
-
   return chlorine;
 }
 
