@@ -49,7 +49,6 @@ void setup() {
   lcd.print("ASOCONTADOR");
   lcd.clear();
   Serial.begin(9600);
-  setup_wifi();
   client.setServer(mqttServer, mqttPort);
 }
 
@@ -77,11 +76,6 @@ void loop() {
   Serial.println(jsonBuffer);
 
   delay(1000);  // Actualizar los valores cada segundo
-}
-
-void setup_wifi() {
-  // La configuración de WiFi ahora se maneja a través de WiFiManager
-  // No es necesario repetirla aquí.
 }
 
 void reconnect() {
