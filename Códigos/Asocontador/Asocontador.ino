@@ -115,6 +115,7 @@ float measurePH() {
 
   float phValue = (float)avgValue * 3.3 / 1024 / 6;
   phValue = 3.5 * phValue;
+  
 
   return phValue;
 }
