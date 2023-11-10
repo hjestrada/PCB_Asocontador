@@ -32,7 +32,7 @@ PubSubClient client(espClient);
 void setup() {
   // Inicia WiFiManager para configuración de WiFi
   WiFiManager wifiManager;
-  wifiManager.autoConnect("ConfigurarWiFi");
+  wifiManager.autoConnect("Asocontador_Config");
   
   //set the resolution to 10 bits (0-1024)
   analogReadResolution(10);
