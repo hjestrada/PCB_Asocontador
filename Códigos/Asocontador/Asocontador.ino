@@ -5,8 +5,10 @@
 
 LiquidCrystal lcd(3, 2, 4, 5, 6, 7);
 
+#define Turbidy_sensor A2
+float Tension = 0.0;
+float NTU = 0.0;
 #define SensorPin A0
-#define TurbidityPin A2
 #define ChlorinePin A1
 unsigned long int avgValue;
 float b;
@@ -33,7 +35,7 @@ void setup() {
   // Inicia WiFiManager para configuración de WiFi
   WiFiManager wifiManager;
   wifiManager.autoConnect("Asocontador_Config");
-  
+
   //set the resolution to 10 bits (0-1024)
   analogReadResolution(10);
   lcd.begin(16, 2);
@@ -121,12 +123,23 @@ float measurePH() {
 }
 
 float measureTurbidity() {
-  int sensorValue = analogRead(TurbidityPin);
-  float voltage = sensorValue * (5.0 / 1024.0);
+  Tension = 0;
+  Tension = analogRead(Turbidy_sensor) / 1024 * 5; // Mapeo de la lectura analógica
+  //Para compensar el ruido producido en el sensor tomamos 500 muestras y obtenemos la media
+  for (int i = 0; i < 500; i++)
+  {
+    Tension += ((float)analogRead(Turbidy_sensor) / 1024) * 5;
+  }
+  Tension = Tension / 500;
+  Tension = redondeo(Tension-0.68, 1);
+  //Para ajustarnos a la gráfica de la derecha
+  if (Tension < 2.5) {
+    NTU = 3000;
+  } else {
+    NTU = -1120.4 * sq(Tension) + 5742.3 * Tension - 4352.9;
+  }
 
-  float turbidity = calibracionTurbidezK * voltage + calibracionTurbidezB;
-
-  return turbidity;
+  return NTU;
 }
 
 float measureChlorine() {
@@ -136,6 +149,13 @@ float measureChlorine() {
   return chlorine;
 }
 
+float redondeo(float p_entera, int p_decimal)
+{
+  float multiplicador = powf( 10.0f, p_decimal);  //redondeo a 2 decimales
+  p_entera = roundf(p_entera * multiplicador) / multiplicador;
+  return p_entera;
+}
+
 void displayValues(float pH, float turbidity, float chlorine) {
   lcd.setCursor(0, 0);
   lcd.print("pH: ");
@@ -143,9 +163,9 @@ void displayValues(float pH, float turbidity, float chlorine) {
   lcd.setCursor(11, 0);
   lcd.print("Unid");
   lcd.setCursor(0, 1);
-  lcd.print("Turb: ");
+  lcd.print("Tbz:");
   lcd.print(turbidity, 2);
-  lcd.setCursor(12, 1);
+  lcd.setCursor(13, 1);
   lcd.print("UNT");
   delay(5000);
   lcd.clear();
