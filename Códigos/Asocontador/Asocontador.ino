@@ -95,57 +95,25 @@ void reconnect() {
 }
 
 float measurePH() {
-  for (int i = 0; i < 10; i++) {
-    buf[i] = analogRead(SensorPin);
-    delay(10);
-  }
-
-  for (int i = 0; i < 9; i++) {
-    for (int j = i + 1; j < 10; j++) {
-      if (buf[i] > buf[j]) {
-        temp = buf[i];
-        buf[i] = buf[j];
-        buf[j] = temp;
-      }
-    }
-  }
-
-  avgValue = 0;
-  for (int i = 2; i < 8; i++) {
-    avgValue += buf[i];
-  }
-
-  float phValue = (float)avgValue * 3.3 / 1024 / 6;
-  phValue = 3.5 * phValue;
-  
-
-  return phValue;
+   float pH;
+  // Lee el valor de voltaje en el pin A0
+  float voltage = analogRead(SensorPin) * (5.0 / 1024.0);
+  pH = 1.4151 * (voltage) + 2.9487;
+   return pH;
 }
 
 float measureTurbidity() {
-  Tension = 0;
-  Tension = analogRead(Turbidy_sensor) / 1024 * 5; // Mapeo de la lectura analógica
-  //Para compensar el ruido producido en el sensor tomamos 500 muestras y obtenemos la media
-  for (int i = 0; i < 500; i++)
-  {
-    Tension += ((float)analogRead(Turbidy_sensor) / 1024) * 5;
-  }
-  Tension = Tension / 500;
-  Tension = redondeo(Tension-0.68, 1);
-  //Para ajustarnos a la gráfica de la derecha
-  if (Tension < 2.5) {
-    NTU = 3000;
-  } else {
-    NTU = -1120.4 * sq(Tension) + 5742.3 * Tension - 4352.9;
-  }
-
-  return NTU;
+     float turbidez;
+       float voltage = analogRead(Turbidy_sensor) * (5.0 / 1024.0);
+  turbidez = -108.61 * (voltage) + 1148.1;
+  return turbidez;
 }
 
 float measureChlorine() {
-  int sensorValue = analogRead(ChlorinePin);
-  float voltage = sensorValue * (5.0 / 1024.0);
-  float chlorine = calibracionCloroK * voltage + calibracionCloroB;
+ float chlorine=0; //Cambiar Al momento de conectar el sensor.
+ // int sensorValue = analogRead(ChlorinePin);
+//  float voltage = sensorValue * (5.0 / 1024.0);
+ // float chlorine = calibracionCloroK * voltage + calibracionCloroB;
   return chlorine;
 }
 

@@ -11,19 +11,24 @@ void setup() {
   delay(3000);
   lcd.clear();
   lcd.setCursor(0, 0);
-  
+
   //set the resolution to 10 bits (0-1024)
   analogReadResolution(10);
 }
 
 void loop() {
+  float pH;
   // Lee el valor de voltaje en el pin A0
   float voltage = analogRead(SensorPin) * (5.0 / 1024.0);
-
+  pH = 1.4151 * (voltage) + 2.9487;
   // Muestra el valor de voltaje en la pantalla LCD
   lcd.print("Voltaje A0: ");
   lcd.print(voltage, 4);
+  delay(1000);  // Actualizar el valor cada segundo
+  lcd.clear();
 
+  lcd.print("pH: ");
+  lcd.print(pH, 4);
   delay(1000);  // Actualizar el valor cada segundo
   lcd.clear();
 }
