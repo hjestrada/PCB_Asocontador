@@ -1,0 +1,152 @@
+#include <LiquidCrystal.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+#include <WiFiManager.h>
+
+LiquidCrystal lcd(3, 2, 4, 5, 6, 7);
+
+#define TurbiditySensor A2
+#define SensorPin A0
+#define ChlorinePin A1
+
+float calibracionTurbidezK = 1.0;
+float calibracionTurbidezB = 0.0;
+float calibracionCloroK = 1.0;
+float calibracionCloroB = 0.0;
+
+const char* mqttServer = "broker.hivemq.com";
+const int mqttPort = 1883;
+const char* mqttUser = "";
+const char* mqttPassword = "";
+const char* mqttTopic = "Asocontador/MonitorPrincipal";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void setup() {
+  VerificacionInicial();
+
+  WiFiManager wifiManager;
+  if (!wifiManager.autoConnect("Asocontador_Config")) {
+    Serial.println("Fallo al conectar al WiFi. Reinicia el dispositivo y configura manualmente.");
+    Sininternet();
+    ESP.restart();
+  }
+
+  Serial.begin(9600);
+  Serial.println("Conectado al WiFi. IP del hotspot:");
+  Serial.println(WiFi.softAPIP());
+
+  lcdSetup();
+
+  client.setServer(mqttServer, mqttPort);
+}
+
+void VerificacionInicial() {
+  lcd.begin(16, 2);
+  lcdPrint("Sin Internet", "Error al iniciar");
+  delay(2000);
+  lcdPrint("Verificar Wifi", "Reinicie Tarjeta");
+  delay(2000);
+}
+
+void lcdPrint(const char* line1, const char* line2) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(line1);
+  lcd.setCursor(0, 1);
+  lcd.print(line2);
+}
+
+void lcdSetup() {
+  lcdPrint("Tecnoparque", "Nodo Pitalito");
+  delay(3000);
+  lcdPrint("Calidad del agua", "ASOCONTADOR");
+  delay(3000);
+  lcd.clear();
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+    displayValues(measurePH(), measureTurbidity(), measureChlorine());
+    Sininternet();
+  }
+
+  lcd.setCursor(0, 0);
+  displayValues(measurePH(), measureTurbidity(), measureChlorine());
+
+  if (client.connected()) {
+    DynamicJsonDocument doc(256);
+    doc["pH"] = phValue;
+    doc["Turbidity"] = turbidityValue;
+    doc["Chlorine"] = chlorineValue;
+
+    char jsonBuffer[256];
+    serializeJson(doc, jsonBuffer);
+
+    client.publish(mqttTopic, jsonBuffer);
+    Serial.println("Datos enviados al broker MQTT:");
+    Serial.println(jsonBuffer);
+  }
+
+  delay(1000);
+}
+
+void Sininternet() {
+  lcdPrint("Sin Internet", "");
+  delay(2000);
+  lcd.clear();
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("Conexión MQTT...");
+    if (client.connect("Monitor", mqttUser, mqttPassword)) {
+      Serial.println("Conectado al broker MQTT");
+    } else {
+      Serial.print("Error de conexión, rc=");
+      Serial.print(client.state());
+      Serial.println(" Intentando de nuevo en 5 segundos");
+      displayValues(measurePH(), measureTurbidity(), measureChlorine());
+      delay(5000);
+      Sininternet();
+    }
+  }
+}
+
+float measurePH() {
+  float voltage = analogRead(SensorPin) * (5.0 / 1024.0);
+  return 1.4151 * voltage + 2.9487;
+}
+
+float measureTurbidity() {
+  float voltage = analogRead(TurbiditySensor) * (5.0 / 1024.0);
+  return (-108.61 * voltage + 1148.1) / 1000;
+}
+
+float measureChlorine() {
+  return 0.0;  // Placeholder, implementar medida real si es necesario
+}
+
+void displayValues(float pH, float turbidity, float chlorine) {
+  lcd.setCursor(0, 0);
+  lcd.print("pH: ");
+  lcd.print(pH, 2);
+  lcd.setCursor(11, 0);
+  lcd.print("Unid");
+  lcd.setCursor(0, 1);
+  lcd.print("Tbz:");
+  lcd.print(turbidity, 2);
+  lcd.setCursor(13, 1);
+  lcd.print("UNT");
+  delay(5000);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Cl: ");
+  lcd.print(chlorine, 2);
+  lcd.setCursor(10, 0);
+  lcd.print("mg/L");
+  delay(3000);
+  lcd.clear();
+}
